@@ -2,9 +2,9 @@
 ### Example user template
 
 # IntelliJ project files
-.idea
+Spring-입문/.idea
 *.iml
 out
 gen
-.gradle
+Spring-입문/.gradle
 build
