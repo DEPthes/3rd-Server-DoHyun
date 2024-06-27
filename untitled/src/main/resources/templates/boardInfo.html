@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>게시글 상세보기</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script th:inline="javascript">
+        var loginverfiy = false;
+
+        $(document).ready(function () {
+            console.log("Document ready");
+            var login = document.getElementById('loginMember_username') ? document.getElementById('loginMember_username').value : null;
+            if (login !== null && login !== '') {
+                loginverfiy = true;
+            }
+        });
+
+        function opList(){
+            window.location.href="/board";
+        }
+
+        function updateBoardPage(){
+            if(loginverfiy === true) {
+                console.log("Login verified, opening modal");
+                openModal();
+            } else {
+                alert("권한이 없습니다.");
+            }
+        }
+
+        function openModal() {
+            console.log("Opening modal");
+            document.getElementById('passwordModal').style.display = 'block';
+        }
+
+        function closeModal() {
+            console.log("Closing modal");
+            document.getElementById('passwordModal').style.display = 'none';
+        }
+
+        function boardDelete(){
+            alert("삭제 버튼 동작");
+        }
+
+        function verifyPassword(boardId) {
+            console.log("Verifying password for board ID: " + boardId);
+            var passwordInput = document.getElementById('password').value;
+            var id = document.getElementById('input_id').value;
+            const loginMember = document.getElementById('loginMember_username').value;
+
+            var dto = {
+                "id": id,
+                "password": passwordInput,
+                "memberDto": {
+                    "username": loginMember
+                }
+            };
+
+            console.log("Sending AJAX request with data: ", dto);
+
+            $.ajax({
+                url: "/password/verify",
+                method: "post",
+                contentType: "application/json",
+                data: JSON.stringify(dto)
+            }).done(function (response) {
+                console.log("AJAX request succeeded with response: " + response);
+                if (response === 1) {
+                    alert("비밀번호 검증 성공");
+                    window.location.href = "/board/update/" + boardId;
+                } else {
+                    alert("비밀번호 검증 실패");
+                }
+            }).fail(function (xhr) {
+                console.log("AJAX request failed with status: " + xhr.status);
+                if (xhr.status === 500) {
+                    alert("오류 발생");
+                }
+                if (xhr.status === 400) {
+                    alert("비밀번호가 일치하지 않습니다.");
+                }
+                if (xhr.status === 401) {
+                    alert("등록한 사용자만 수정할 수 있습니다.");
+                }
+            });
+        }
+    </script>
+
+    <style>
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgb(0,0,0);
+            background-color: rgba(0,0,0,0.4);
+            padding-top: 60px;
+        }
+
+        .modal-content {
+            background-color: #fefefe;
+            margin: 5% auto;
+            padding: 20px;
+            border: 1px solid #888;
+            width: 80%;
+        }
+
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+        }
+
+        .close:hover,
+        .close:focus {
+            color: black;
+            text-decoration: none;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+
+<nav class="navbar navbar-expand-lg bg-body-tertiary">
+    <div class="container-fluid">
+        <a class="navbar-brand" href="#" th:href="@{/}">게시판</a>
+        <div class="collapse navbar-collapse" id="navbarNavDropdown">
+            <ul class="navbar-nav">
+                <div th:if="${loginMember != null}" class="d-flex justify-content-between">
+                    <div class="nav-item">
+                        <a class="nav-link active" aria-current="page" th:text="'사용자: '+${loginMember.username}">Home</a>
+                    </div>
+                    <div class="nav-item">
+                        <form th:action="@{/logout}" method="post">
+                            <button type="submit" class="btn btn-link">로그아웃</button>
+                        </form>
+                    </div>
+                </div>
+                <div th:if="${loginMember==null}"  class="d-flex justify-content-between">
+                    <li class="nav-item" >
+                        <a class="nav-link active" aria-current="page" th:href="@{/login}">로그인</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" th:href="@{/createMember}">회원가입</a>
+                    </li>
+                </div>
+            </ul>
+        </div>
+    </div>
+</nav>
+
+<div th:object="${board}">
+    <div class="container mt-4">
+        <div class="block table-responsive grid-view">
+            <table class="table table-bordered">
+                <hr class="my-4"/>
+                <colgroup>
+                    <col style="width:15%;">
+                    <col>
+                    <col style="width:15%;">
+                    <col>
+                </colgroup>
+                <thead>
+                <tr>
+                    <th colspan="4">
+                        <div class="col-md-12">
+                            <span id="text_title" th:text="*{title}"></span>
+                            <button type="button" class="btn" onclick="updateBoardPage()">수정</button>
+                            <button type="button" onclick="boardDelete()" class="btn btn-danger">삭제</button>
+                            <button type="button" class="btn btn-info" onclick="opList();">목록</button>
+                        </div>
+                    </th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr>
+                    <th>등록자명</th>
+                    <td th:text="*{writer}"></td>
+                    <th>등록일</th>
+                    <td th:text="${#temporals.format(board.dateTime, 'yyyy-MM-dd')}">2024-01-20 15:46:22</td>
+                </tr>
+                <tr>
+                    <th>조회수</th>
+                    <td colspan="3" th:text="*{views}">5</td>
+                </tr>
+                <tr>
+                    <td colspan="4">
+                        <div class="col-md-9 board-contents" th:text="*{content}"></div>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+            <hr class="my-4"/>
+        </div>
+    </div>
+
+    <input type="hidden" id="input_id" th:value="*{id}">
+    <input th:if="${loginMember != null}" type="hidden" id="loginMember_username" th:value="${loginMember.username}">
+</div>
+
+<!-- Modal HTML -->
+<div id="passwordModal" class="modal">
+    <div class="modal-content">
+        <span class="close" onclick="closeModal()">&times;</span>
+        <label for="password">비밀번호를 입력하세요:</label>
+        <input type="password" id="password">
+        <button onclick="verifyPassword([[${board.id}]])">확인</button>
+    </div>
+</div>
+
+</body>
+</html>

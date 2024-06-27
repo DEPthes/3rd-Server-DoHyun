@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script th:inline="javascript">
+    function writeboard() {
+        // 입력 필드에서 값을 가져옵니다.
+        const title = document.getElementById('title_input').value;
+        const loginMember_username = document.getElementById('writer_input').value;
+        const password = document.getElementById('password_input').value;
+        const content = document.getElementById('content_input').value;
+
+        // 전송할 데이터를 객체로 구성합니다.
+        var boardDto = {
+            "title": title,
+            "password": password,
+            "content": content,
+            "memberDto": {
+                "username": loginMember_username
+            }
+        }
+
+        // 데이터 확인을 위한 콘솔 로그
+        console.log("Sending data: ", JSON.stringify(boardDto));
+
+        // AJAX 요청을 보냅니다.
+        $.ajax({
+            url: "/boardWrit",  // 서버의 적절한 엔드포인트 사용
+            method: "POST",
+            contentType: "application/json",
+            data: JSON.stringify(boardDto)
+        })
+            .done(function (response) {
+                console.log("Success response: ", response);
+                // 요청이 성공하면 게시판 페이지로 이동합니다.
+                window.location.href = "/board";
+            })
+            .fail(function (xhr) {
+                console.log("Error response: ", xhr);
+                if (xhr.status === 500) {
+                    alert("서버 오류");
+                } else if (xhr.status === 400) {
+                    try {
+                        var errorMap = JSON.parse(xhr.responseText);
+                        console.log("Error map: ", errorMap);
+                        $.each(errorMap, function (key, value) {
+                            alert(key + ": " + value);
+                        });
+                    } catch (e) {
+                        console.error("Error parsing response JSON: ", e);
+                        alert("알 수 없는 오류가 발생했습니다.");
+                    }
+                } else {
+                    alert("요청 처리 중 오류가 발생했습니다. 상태 코드: " + xhr.status);
+                }
+            })
+            .always(function () {
+                // 이 블록은 요청 성공 또는 실패 여부와 상관없이 항상 실행됩니다.
+                console.log("AJAX request completed");
+            });
+    }
+
+    function cancle(){
+        window.location.href="/board";
+    }
+</script>
+<body>
+
+<div class="container mt-5"th:object="${board}">
+    <div class="block table-responsive grid-view">
+        <table class="table table-bordered">
+            <caption class="hidden">작성</caption>
+            <tbody>
+            <tr>
+                <th><label th:for="writer">작성자</label></th>
+                <td>
+                    <input class="form-control" id="writer_input" type="text" th:value="${loginMember.username}" readonly></td>
+            </tr>
+            <tr>
+                <th><label th:for="title">제목</label></th>
+                <td colspan="3"><input class="form-control" id="title_input" type="text" th:field="*{title}"></td>
+            </tr>
+            <tr>
+                <th><label th:for="password">비밀번호</label></th>
+                <td colspan="3"><input class="form-control" id="password_input" type="password" th:field="*{password}"></td>
+            </tr>
+            <tr>
+                <th><label th:for="content">내용</label></th>
+                <td colspan="3">
+                    <textarea class="form-control" th:field="*{content}"  id="content_input" rows="5" cols="80" style="height: 235px; width: 614px;"></textarea>
+                </td>
+            </tr>
+            </tbody>
+        </table>
+        <button onclick="writeboard()">글쓰기</button>
+        <button onclick="cancle()">취소</button>
+    </div>
+</div>
+
+</body>
+</html>
